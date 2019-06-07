@@ -1,6 +1,7 @@
 <template>
   <div id="network">
     <!-- <button id="reset-button" @click="reset">reset</button> -->
+    <div class="linkText" :style="linkTextPosition" v-show="linkTextVisible" v-text="linkTextContent"></div>
     <svg
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -133,7 +134,13 @@ export default {
       pinned: [], // 被订住的中心节点的下标
       force: null,
       zoom: d3.zoom(),
-      nodeColor: d3.scaleOrdinal(d3.schemeCategory10) // d3.scale.category20()
+      nodeColor: d3.scaleOrdinal(d3.schemeCategory10), // d3.scale.category20()
+      linkTextVisible: false,
+      linkTextPosition: {
+        top: 0,
+        left: 0
+      },
+      linkTextContent: ''
     };
   },
   computed: {
@@ -337,7 +344,7 @@ export default {
       // .call(this.zoom.event);
     },
     clickLink(e) {
-      this.$emit("clickLink", e.target.__data__);
+      this.$emit("clickLink", e.target);
       // console.log("嘿，点击边了");
       // let link = e.target.__data__;
       // console.log(link.source.name + " vs " + link.target.name);
@@ -355,7 +362,7 @@ export default {
         });
         this.pinned = [];
       }
-      this.$emit("clickNode", e.target.__data__);
+      this.$emit("clickNode", e.target);
       // }
     },
     clickEle(e) {
@@ -388,14 +395,21 @@ export default {
         }
         // 强制刷新
         this.$forceUpdate();
-        this.$emit("hoverNode", e.target.__data__);
+        this.$emit("hoverNode", e.target);
       } else if (e.target.nodeName === "line") {
         // console.log("嘿 hover 边");
         // console.log("坐标：");
         // console.log(e.clientX + ", " + e.clientY);
         // let link = e.target.__data__;
         // console.log(link[this.linkProps.textKey])
-        this.$emit("hoverLink", e.target.__data__);
+        this.linkTextPosition = {
+          left: e.clientX + 'px',
+          top: e.clientY + 'px'
+        }
+        this.linkTextContent = e.target.__data__.value
+        this.linkTextVisible = true
+        setTimeout(()=>{this.linkTextVisible=false},3000)
+        this.$emit("hoverLink", e); // e / e.target.__data__
       }
     },
     svgMouseout(e) {
@@ -591,5 +605,10 @@ svg {
 /* #reset-button {
   position: absolute;
 } */
+
+.linkText {
+  position: absolute;
+  z-index: 10
+}
 </style>
 

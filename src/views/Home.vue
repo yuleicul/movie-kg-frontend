@@ -7,6 +7,7 @@
       :links="links"
       :nodeProps="nodeProps"
       :linkProps="linkProps"
+      @hoverLink="hoverLink"
     ></network>
   </div>
 </template>
@@ -57,6 +58,9 @@ export default {
       .catch(err => console.log(err));
   },
   methods: {
+    hoverLink(e) {
+      console.log(e)
+    },
     addOneNode() {
       this.nodes.push({
         id: this.id++,
