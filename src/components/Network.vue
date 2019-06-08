@@ -1,7 +1,12 @@
 <template>
   <div id="network">
     <!-- <button id="reset-button" @click="reset">reset</button> -->
-    <div class="linkText" :style="linkTextPosition" v-show="linkTextVisible" v-text="linkTextContent"></div>
+    <div
+      class="linkText"
+      :style="linkTextPosition"
+      v-show="linkTextVisible"
+      v-text="linkTextContent"
+    ></div>
     <svg
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -39,7 +44,7 @@
         <g id="node-group">
           <g v-for="node in nodes" :key="node.index">
             <circle
-              :fill="nodeColor(node.id)"
+              :fill="nodeColor(node.type)"
               stroke-width="3"
               :stroke="theme.nodeStroke"
               :class="`${node.type} ${node.showText?'selected' : ''} node element`"
@@ -65,7 +70,7 @@
 <script>
 import * as d3 from "d3"; // 先这样导入 最后优化的时候要按需导入
 import d3SelectionMulti from "d3-selection-multi";
-import { setTimeout } from 'timers';
+import { setTimeout } from "timers";
 
 // const d3 = Object.assign({}, d3Origin, d3SelectionMulti)
 
@@ -79,8 +84,8 @@ DOMTokenList.prototype.indexOf = Array.prototype.indexOf;
 export default {
   name: "network",
   props: {
-    nodes: Array,
-    links: Array,
+    nodeList: Array,
+    linkList: Array,
     nodeProps: {
       type: Object,
       default: () => {
@@ -140,7 +145,7 @@ export default {
         top: 0,
         left: 0
       },
-      linkTextContent: ''
+      linkTextContent: ""
     };
   },
   computed: {
@@ -154,12 +159,27 @@ export default {
     //   //   return false
     //   // }
     // },
-    // nodes() {
-    //   return this.nodeList;
-    // },
-    // links() {
-    //   return this.linkList;
-    // },
+    nodes() {
+      // 去重
+      let nodes = this.nodeList.slice();
+      let nodeIds = [];
+
+      nodes = nodes.filter(node => {
+        if (nodeIds.indexOf(node.id) === -1) {
+          // console.log(node.id);
+          nodeIds.push(node.id);
+          return true;
+        } else {
+          return false;
+        }
+      });
+
+      // console.log(nodes);
+      return nodes;
+    },
+    links() {
+      return this.linkList;
+    },
     theme() {
       if (this.svgProps.theme === "light") {
         return {
@@ -180,28 +200,25 @@ export default {
   },
   watch: {
     nodes: function() {
-        
-
       // this.rerender = false
       // this.rerender = true
       // this.force.stop()
       this.initData();
-      // setTimeout( this.initDragTickZoom(), 1000) 
+      // setTimeout( this.initDragTickZoom(), 1000)
       // d3.selectAll(".node").call();
       // d3.selectAll(".node").call(this.drag(this.force));
       // d3.selectAll(".node").call(this.drag(this.force));
 
       // this.$forceUpdate();
-     
+
       // this.$forceUpdate();
-       this.$nextTick(function () {
-         console.log("神奇")
-         // 以下这个函数重新在 node 上调用了拖拽 
-         // 只有在 mounted 后才有用
-         // 所以要使用 $nextTick
-         this.initDragTickZoom()
-      })
-      
+      this.$nextTick(function() {
+        // console.log("神奇");
+        // 以下这个函数重新在 node 上调用了拖拽
+        // 只有在 mounted 后才有用
+        // 所以要使用 $nextTick
+        this.initDragTickZoom();
+      });
 
       // d3.selectAll(".node").call(this.drag(this.force));
 
@@ -211,16 +228,16 @@ export default {
   // updated() {
   //   console.log("update")
   //     // d3.selectAll(".node").call(this.drag(this.force));
-    
+
   // },
   created() {
     this.initData();
-      // 初始化 zoom
-      // this.zoom
-      //   // .translate([0, 0]) // 初始位置
-      //   // .scale(1) // 初始比例
-      //   .scaleExtent([0.5, 4])
-      //   .on("zoom", this.zoomed); //??? 直接写在<svg>上了不知是否ok
+    // 初始化 zoom
+    // this.zoom
+    //   // .translate([0, 0]) // 初始位置
+    //   // .scale(1) // 初始比例
+    //   .scaleExtent([0.5, 4])
+    //   .on("zoom", this.zoomed); //??? 直接写在<svg>上了不知是否ok
     // console.log("开始创建");
     // console.log(this.nodes);
 
@@ -240,15 +257,15 @@ export default {
     // .gravity(0.2);
   },
   mounted() {
-    console.log("mounted")
+    // console.log("mounted");
     this.initDragTickZoom();
   },
   // updated() {
-    // console.log("有数据更新")
-    // console.log("节点更新了")
-    // if (this.nodes)
-    // this.initData()
-    // this.initDragTickZoom()
+  // console.log("有数据更新")
+  // console.log("节点更新了")
+  // if (this.nodes)
+  // this.initData()
+  // this.initDragTickZoom()
   // },
   methods: {
     initData() {
@@ -260,11 +277,12 @@ export default {
             .forceLink(this.links)
             .id(d => d.id)
             .distance(this.linkProps.linkDistance)
+          // .strength(100)
         )
         //.force("charge", d3.forceManyBody())
         // .linkDistance(50) //指定连线长度
 
-        .force("charge", d3.forceManyBody().strength(-150)) //The strength of the attraction or repulsion
+        .force("charge", d3.forceManyBody().strength(-this.nodeProps.nodeSize * 15)) //The strength of the attraction or repulsion
         // .forceCollide(2)
         .force(
           "center",
@@ -279,7 +297,6 @@ export default {
 
       console.log(this.nodes);
       console.log(this.links);
-
     },
     initDragTickZoom() {
       // 给节点添加拖拽
@@ -332,7 +349,6 @@ export default {
             });
         });
 
-
       // // 初始化 zoom
       this.zoom
         // .translate([0, 0]) // 初始位置
@@ -340,11 +356,13 @@ export default {
         .scaleExtent([0.5, 4])
         .on("zoom", this.zoomed); //??? 直接写在<svg>上了不知是否ok
 
-      d3.select("svg").call(this.zoom);
+      d3.select("svg")
+        .call(this.zoom)
+        .on("dblclick.zoom", null);
       // .call(this.zoom.event);
     },
     clickLink(e) {
-      this.$emit("clickLink", e.target);
+      this.$emit("clickLink", e);
       // console.log("嘿，点击边了");
       // let link = e.target.__data__;
       // console.log(link.source.name + " vs " + link.target.name);
@@ -362,7 +380,7 @@ export default {
         });
         this.pinned = [];
       }
-      this.$emit("clickNode", e.target);
+      this.$emit("clickNode", e);
       // }
     },
     clickEle(e) {
@@ -375,10 +393,10 @@ export default {
     svgMousedown(e) {
       // 这个监听器只能监听到非节点的内容
       // 改变鼠标样式
-      console.log("鼠标按下");
+      // console.log("鼠标按下");
 
       // e.stopImmediatePropagation();
-      
+
       // this.svgClass.mouseup = false;
       // this.svgClass.mousedown = true;
     },
@@ -403,16 +421,19 @@ export default {
         // let link = e.target.__data__;
         // console.log(link[this.linkProps.textKey])
         this.linkTextPosition = {
-          left: e.clientX + 'px',
-          top: e.clientY + 'px'
-        }
-        this.linkTextContent = e.target.__data__.value
-        this.linkTextVisible = true
-        setTimeout(()=>{this.linkTextVisible=false},3000)
+          left: e.clientX + "px",
+          top: e.clientY - 50 + "px"
+        };
+        this.linkTextContent = e.target.__data__.value;
+        this.linkTextVisible = true;
+        // setTimeout(() => {
+        //   this.linkTextVisible = false;
+        // }, 3000);
         this.$emit("hoverLink", e); // e / e.target.__data__
       }
     },
     svgMouseout(e) {
+      this.linkTextVisible = false;
       if (e.target.nodeName === "circle") {
         if (this.pinned.length === 0) {
           this.noSelectedState(e);
@@ -501,7 +522,7 @@ export default {
     },
     zoomed() {
       // 缩放中：以鼠标所在的位置为中心
-      console.log(d3.event);
+      // console.log(d3.event);
       // x = d3.event.transform.x;
       // y = d3.event.transform.y;
       // s = d3.event.transform.k;
@@ -539,7 +560,7 @@ export default {
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended);
-    },
+    }
     // reset() {
     //   let zoom = this.zoom;
     //   d3.transition()
@@ -608,7 +629,13 @@ svg {
 
 .linkText {
   position: absolute;
-  z-index: 10
+  z-index: 10;
+  /* width: 5px; */
+  /* height: 40px; */
+  background-color: rgba(75, 75, 75, 0.596);
+  border-radius: 10px;
+  color: white;
+  padding: 10px;
 }
 </style>
 

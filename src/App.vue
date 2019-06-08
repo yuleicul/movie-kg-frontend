@@ -9,7 +9,7 @@
 </template>
 
 <style>
-html, body, #app, .home {
+html, body, #app, .home, .graph {
   height: 100%;
   width: 100%
 }
