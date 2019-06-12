@@ -214,6 +214,11 @@ export default {
     }
   },
   watch: {
+    linkDistance: function() {
+      this.$nextTick(function() {
+      this.initData()
+      })
+    },
     nodes: function() {
       // this.rerender = false
       // this.rerender = true
@@ -234,8 +239,7 @@ export default {
         // 所以要使用 $nextTick
         this.initDragTickZoom();
       });
-    },
-    highlightNodes: function() {}
+    }
   },
   // updated() {
   //   console.log("update")

@@ -22,10 +22,35 @@
       </div>
       <!-- <button @click="search">搜索</button> -->
     </div>
+      <el-button v-if="showContent" icon="el-icon-s-operation" circle @click="showSettingCard=!showSettingCard" class="setting"></el-button>
+    
+
+     <el-card v-if="showSettingCard" class="setting-box-card setting" >
+        <div slot="header" class="clearfix">
+          <span>设置</span>
+          <el-button style="float: right; padding: 3px 0" type="text" @click="showSettingCard=!showSettingCard">关闭</el-button>
+        </div>
+        节点大小
+        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>
+        边粗细
+        <el-slider v-model="linkWidth" show-input :max="20" ></el-slider>
+        边长度
+         <el-slider v-model="linkDistance" show-input :max="300" :step="50" ></el-slider>
+    <br />
+    <div>
+      <el-switch
+  v-model="svgTheme"
+  active-text="黑暗模式"
+  inactive-text="明亮模式">
+</el-switch>
+</div>
+      
+        
+      </el-card>
 
     <div v-if="showContent" class="content">
       <div class="card-container">
-        <el-card class="box-card">
+        <el-card class="result-box-card">
           <div slot="header" class="clearfix">
             <span>搜索结果</span>
           </div>
@@ -35,10 +60,6 @@
           <el-checkbox-group v-model="highlightNodes">
             <div v-for="item in movieData" :key="item.id" class="item">
               <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
-              <!-- <input type="checkbox"  :id="item.id" v-model="highlightNodes" :value="item.id" class="checkbox"> -->
-              <!-- <label :for="item.id" :style="{color: 'blue'}">{{item[nodeTextKey]}}</label> -->
-              <!-- <input type="checkbox" name="d" :id="item.id" v-model="highlightNodes" :value="item.id">{{item[nodeTextKey]}} -->
-              <!-- <el-button type="text" @click="clickTreeNode(item.id)">{{item[nodeTextKey]}}</el-button> -->
               <span v-if="item.rate" class="rate-star">
                 <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
                 <i class="el-icon-star-off" v-else></i>
@@ -80,11 +101,15 @@
           :linkTextFrontSize="linkTextFrontSize"
           :linkDistance="linkDistance"
           :svgSize="svgSize"
-          :svgTheme="svgTheme"
+          :svgTheme="svgTheme?'dark':'light'"
           :highlightNodes="highlightNodes"
           @clickNode="clickNode"
         ></network>
       </div>
+    </div>
+    <div v-if="showNothingFound" class="nothing-found">
+      <i class="el-icon-circle-close"/>
+      没有找到任何内容
     </div>
   </div>
 </template>
@@ -115,35 +140,21 @@ export default {
       linkDistance: 100,
       //
       svgSize: {
-        width: 900,
+        width: 950,
         height: 700
       },
-      svgTheme: "dark",
+      svgTheme: true,
       nodeIds: [], // 用于判断重复节点
-      // canRender: true,
-      // mode: "light" // dark or light
-      // queryWords: ""
       searchKey: "",
       headTop: "30%",
       showContent: false,
+      showNothingFound: false,
       showTitle: true,
-      highlightNodes: []
+      highlightNodes: [],
+      showSettingCard: false
     };
   },
   computed: {
-    // treeProps() {
-    //   return { children: "children", label: this.nodeTextKey };
-    // },
-    // treeData() {
-    //   let movieItem = {};
-    //   movieItem[this.treeProps.children] = this.treeMovieData;
-    //   movieItem[this.treeProps.label] = "电影";
-    //   let personItem = {};
-    //   personItem[this.treeProps.children] = this.treePersonData;
-    //   personItem[this.treeProps.label] = "人物";
-
-    //   return [movieItem, personItem];
-    // },
     personData() {
       return this.nodes.filter(node => {
         return node.type === "Person";
@@ -179,6 +190,7 @@ export default {
     search() {
       this.headTop = "10px";
       this.showContent = true;
+      this.showNothingFound = false;
       this.showTitle = false;
       // axios
       //   .get(`/api/${this.searchKey}`)
@@ -187,8 +199,13 @@ export default {
       //     if (res.data.status === true) {
       //       this.nodes = res.data.entity.nodes;
       //       this.links = res.data.entity.links;
+      //  this.showContent = true;
+      //  this.showNothingFound = false;
+
       //     } else {
       //       console.log("找不到");
+      //  this.showNothingFound = true;
+      //  this.showContent = false;
       //     }
       //   })
       //   .catch(err => {
@@ -256,11 +273,11 @@ ul {
   /* box-sizing: border-box; */
   flex: 1;
 
-  margin-left: 60px;
+  margin-left: 35px;
   /* background-color: blue; */
 }
 
-.box-card {
+.result-box-card {
   /* color: white; */
   /* border: 10px solid rgb(160, 160, 160); */
 
@@ -268,9 +285,11 @@ ul {
   position: relative;
   width: 380px;
   max-height: 700px;
-  background-color: rgb(255, 255, 255);
-  box-shadow: 20px 20px 20px rgb(218, 56, 56);
+  
+
 }
+
+
 
 .rate-star {
   /* padding: 12px; */
@@ -322,5 +341,28 @@ ul {
 }
 .head-enter, .head-leave-to /* .head-leave-active below version 2.1.8 */ {
   opacity: 0;
+}
+.nothing-found {
+  position: absolute;
+  top: 150px;
+  left: 46%;
+  color: white;
+  font-size: 14px;
+}
+
+.setting {
+  position: absolute;
+  right: 40px;
+  top: 20px;
+  z-index: 10;
+}
+
+.setting-box-card {
+  overflow: auto;
+  /* position: relative; */
+  width: 380px;
+  max-height: 700px;
+  
+
 }
 </style>
