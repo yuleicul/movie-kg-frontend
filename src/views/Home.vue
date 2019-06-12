@@ -1,15 +1,28 @@
 <template>
   <div class="home">
     <div class="filter"></div>
+
     <div class="head" :style="{top: this.headTop}">
-      <div class="title">
-        <h1>电影图谱</h1>
-      </div>
       <div>
-        <input type="text" v-model="searchKey" @keyup.enter="search">
-        <button @click="search">搜索</button>
+        <h1 class="title" v-if="showTitle">电影图谱</h1>
+        <p class="summary" v-if="showTitle">
+          找寻电影
+          <i class="el-icon-film"/> 与人物
+          <i class="el-icon-user"/> 的关系
+        </p>
       </div>
+      <div class="search-container">
+        <el-input
+          placeholder="请输入关键词，例如周润发"
+          prefix-icon="el-icon-search"
+          v-model="searchKey"
+          @keyup.enter.native="search"
+          :style="{width: '500px'}"
+        ></el-input>
+      </div>
+      <!-- <button @click="search">搜索</button> -->
     </div>
+
     <div v-if="showContent" class="content">
       <div class="card-container">
         <el-card class="box-card">
@@ -20,40 +33,54 @@
 
           <h3>电影</h3>
           <el-checkbox-group v-model="highlightNodes">
-          <div v-for="item in movieData" :key="item.id" class="item">
-            <el-checkbox :label="item[nodeProps.textKey]"></el-checkbox>
-            <!-- <input type="checkbox"  :id="item.id" v-model="highlightNodes" :value="item.id" class="checkbox"> -->
-            <!-- <label :for="item.id" :style="{color: 'blue'}">{{item[nodeProps.textKey]}}</label> -->
-            <!-- <input type="checkbox" name="d" :id="item.id" v-model="highlightNodes" :value="item.id">{{item[nodeProps.textKey]}} -->
-            <!-- <el-button type="text" @click="clickTreeNode(item.id)">{{item[nodeProps.textKey]}}</el-button> -->
-            <span v-if="item.rate" class="rate-star">
-              <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
-              <i class="el-icon-star-off" v-else></i>
-              <i class="el-icon-star-on" v-if="item.rate >= 4"></i>
-              <i class="el-icon-star-off" v-else></i>
-              <i class="el-icon-star-on" v-if="item.rate >= 6"></i>
-              <i class="el-icon-star-off" v-else></i>
-              <i class="el-icon-star-on" v-if="item.rate >= 8"></i>
-              <i class="el-icon-star-off" v-else></i>
-              <i class="el-icon-star-on" v-if="item.rate >= 9.5"></i>
-              <i class="el-icon-star-off" v-else></i>
-              {{ item.rate.toFixed(1) }}
-            </span>
-          </div>
+            <div v-for="item in movieData" :key="item.id" class="item">
+              <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
+              <!-- <input type="checkbox"  :id="item.id" v-model="highlightNodes" :value="item.id" class="checkbox"> -->
+              <!-- <label :for="item.id" :style="{color: 'blue'}">{{item[nodeTextKey]}}</label> -->
+              <!-- <input type="checkbox" name="d" :id="item.id" v-model="highlightNodes" :value="item.id">{{item[nodeTextKey]}} -->
+              <!-- <el-button type="text" @click="clickTreeNode(item.id)">{{item[nodeTextKey]}}</el-button> -->
+              <span v-if="item.rate" class="rate-star">
+                <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
+                <i class="el-icon-star-off" v-else></i>
+                <i class="el-icon-star-on" v-if="item.rate >= 4"></i>
+                <i class="el-icon-star-off" v-else></i>
+                <i class="el-icon-star-on" v-if="item.rate >= 6"></i>
+                <i class="el-icon-star-off" v-else></i>
+                <i class="el-icon-star-on" v-if="item.rate >= 8"></i>
+                <i class="el-icon-star-off" v-else></i>
+                <i class="el-icon-star-on" v-if="item.rate >= 9.5"></i>
+                <i class="el-icon-star-off" v-else></i>
+                {{ item.rate.toFixed(1) }}
+              </span>
+            </div>
           </el-checkbox-group>
           <el-divider></el-divider>
+
           <h3>人物</h3>
-          <div v-for="item in personData" :key="item.id" class="text item">
-            <!-- <el-button type="text" @click="clickTreeNode(item.id)">{{item[nodeProps.textKey]}}</el-button> -->
-          </div>
+          <el-checkbox-group v-model="highlightNodes">
+            <template v-if="personData">
+              <div v-for="item in personData" :key="item.id" class="text item">
+                <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
+              </div>
+            </template>
+            <p v-else :style="{color: 'gray', 'font-size':'14px'}">无数据</p>
+          </el-checkbox-group>
         </el-card>
       </div>
       <div class="network-container">
         <network
           :nodeList="nodes"
           :linkList="links"
-          :nodeProps="nodeProps"
-          :linkProps="linkProps"
+          :nodeSize="nodeSize"
+          :nodeTextKey="nodeTextKey"
+          :nodeTextFrontSize="nodeTextFrontSize"
+          :linkWidth="linkWidth"
+          :showLinkText="showLinkText"
+          :linkTextKey="linkTextKey"
+          :linkTextFrontSize="linkTextFrontSize"
+          :linkDistance="linkDistance"
+          :svgSize="svgSize"
+          :svgTheme="svgTheme"
           :highlightNodes="highlightNodes"
           @clickNode="clickNode"
         ></network>
@@ -76,32 +103,36 @@ export default {
       showLinkText: false,
       nodes: [],
       links: [],
-      nodeProps: {
-        nodeSize: 20,
-        showNodeText: false,
-        textKey: "id",
-        textFrontSize: 20
+      //
+      nodeSize: 20,
+      nodeTextKey: "id",
+      nodeTextFrontSize: 20,
+      //
+      linkWidth: 2,
+      showLinkText: false,
+      linkTextKey: "value",
+      linkTextFrontSize: 10,
+      linkDistance: 100,
+      //
+      svgSize: {
+        width: 900,
+        height: 700
       },
-      linkProps: {
-        linkWidth: 2,
-        showLinkText: false,
-        textKey: "value",
-        textFrontSize: 10,
-        linkDistance: 100
-      },
+      svgTheme: "dark",
       nodeIds: [], // 用于判断重复节点
       // canRender: true,
       // mode: "light" // dark or light
       // queryWords: ""
       searchKey: "",
       headTop: "30%",
-      showContent: false, 
+      showContent: false,
+      showTitle: true,
       highlightNodes: []
     };
   },
   computed: {
     // treeProps() {
-    //   return { children: "children", label: this.nodeProps.textKey };
+    //   return { children: "children", label: this.nodeTextKey };
     // },
     // treeData() {
     //   let movieItem = {};
@@ -126,7 +157,7 @@ export default {
   },
   watch: {
     highlightNodes(newValue) {
-      console.log(newValue)
+      console.log(newValue);
     }
   },
   created() {
@@ -146,8 +177,9 @@ export default {
     //   this.highlightNodeId = id
     // },
     search() {
-      this.headTop = "10%";
+      this.headTop = "10px";
       this.showContent = true;
+      this.showTitle = false;
       // axios
       //   .get(`/api/${this.searchKey}`)
       //   .then(res => {
@@ -193,43 +225,51 @@ ul {
 }
 .home {
   background-image: url(/bg.jpg);
+  background-repeat: repeat;
+  overflow: hidden;
 }
 
 .filter {
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color: rgba(80, 72, 0, 0.178);
+  background-color: rgba(0, 0, 0, 0.37);
 }
 
 .head {
   width: 400px;
   position: absolute;
   /* top: 30%; */
-  left: 50%;
+  left: 32%;
   color: rgb(255, 255, 255);
   /* margin: 0 auto; */
 }
 .content {
   position: absolute;
   /* left: 50%; */
-  width: 100%;
-  height: 100%;
-  top: 30%;
+  /* width: 100%; */
+  /* height: 100%; */
+  top: 80px;
   display: flex;
 }
 .card-container {
-  
   /* box-sizing: border-box; */
   flex: 1;
 
-  /* padding-left: 20px; */
+  margin-left: 60px;
   /* background-color: blue; */
 }
 
 .box-card {
+  /* color: white; */
+  /* border: 10px solid rgb(160, 160, 160); */
+
+  overflow: auto;
   position: relative;
   width: 380px;
+  max-height: 700px;
+  background-color: rgb(255, 255, 255);
+  box-shadow: 20px 20px 20px rgb(218, 56, 56);
 }
 
 .rate-star {
@@ -241,6 +281,7 @@ ul {
 
 .network-container {
   flex: 2;
+  margin: 0 30px;
 }
 
 .item {
@@ -257,16 +298,29 @@ ul {
   clear: both;
 }
 
-
-.checkbox {
-  width: 60%;
-  position: absolute;
-  cursor: pointer;
-  background-color: blue;
-  /* -webkit-appearance:listbox */
-  /* opacity: 0; */
+.title {
+  font-size: 50px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 5px black;
 }
-.checkbox:checked {
-  background: blue;
+
+.el-icon-film,
+.el-icon-user {
+  font-weight: bold;
+  color: chocolate;
+}
+
+.search-container {
+  width: 500px;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+}
+.head-enter-active,
+.head-leave-active {
+  transition: opacity 0.5s;
+}
+.head-enter, .head-leave-to /* .head-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 </style>

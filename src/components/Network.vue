@@ -1,5 +1,5 @@
 <template>
-  <div id="network">
+  <div id="network" :style="{width: svgSize.width +'px', height: svgSize.height+'px'}">
     <!-- <button id="reset-button" @click="reset">reset</button> -->
     <div
       class="linkText"
@@ -26,17 +26,17 @@
             <line
               :class="`${link.type} ${link.selected} link element`"
               :stroke="theme.linkStroke"
-              :stroke-width="linkProps.linkWidth"
+              :stroke-width="linkWidth"
             ></line>
             <!-- dx dy 文字左下角坐标 -->
             <text
-              v-if="linkProps.showLinkText"
+              v-if="showLinkText"
               dx="0"
               dy="0"
               class="link-text"
               :fill="theme.textFill"
-              :font-size="linkProps.textFrontSize"
-            >{{link[linkProps.textKey]}}</text>
+              :font-size="linkTextFrontSize"
+            >{{link[linkTextKey]}}</text>
           </g>
         </g>
 
@@ -45,19 +45,19 @@
           <g v-for="node in nodes" :key="node.index">
             <circle
               :fill="nodeColor(node.type)"
-              stroke-width="3"
-              :stroke="highlightNodes.indexOf(node.id) == -1? theme.nodeStroke: 'red' "
+              :stroke-width="highlightNodes.indexOf(node.id) == -1? 3:10"
+              :stroke="highlightNodes.indexOf(node.id) == -1? theme.nodeStroke: 'gold' "
               :class="`${node.type} ${node.showText?'selected' : ''} node element`"
-              :r="nodeProps.nodeSize"
+              :r="nodeSize"
             ></circle>
             <text
               v-show="node.showText"
-              :dx="nodeProps.nodeSize"
+              :dx="nodeSize"
               dy="0"
               class="node-text"
               :fill="theme.textFill"
-              :font-size="nodeProps.textFrontSize"
-            >{{node[nodeProps.textKey]}}</text>
+              :font-size="nodeTextFrontSize"
+            >{{node[nodeTextKey]}}</text>
           </g>
           <g></g>
         </g>
@@ -86,49 +86,63 @@ export default {
   props: {
     nodeList: Array,
     linkList: Array,
-    nodeProps: {
+    // node
+    nodeSize: {
+      type: Number,
+      default: 20
+    },
+    nodeTextKey: {
+      type: String,
+      default: "name"
+    },
+    nodeTextFrontSize: {
+      type: Number,
+      default: 20
+    },
+    // link
+    linkWidth: {
+      type: Number,
+      default: 2
+    },
+    showLinkText: {
+      type: Boolean,
+      default: false
+    },
+    textKey: {
+      type: String,
+      default: "type"
+    },
+    linkTextFrontSize: {
+      type: Number,
+      default: 10
+    },
+    linkDistance: {
+      type: Number,
+      default: 100
+    },
+    // svg
+    svgSize: {
       type: Object,
       default: () => {
         return {
-          nodeSize: 10,
-          showNodeText: false,
-          textKey: "name",
-          textFrontSize: 8
+          width: window.innerWidth,
+          height: window.innerHeight
         };
       }
     },
-    linkProps: {
-      type: Object,
-      default: () => {
-        return {
-          linkWidth: 3,
-          showLinkText: false,
-          textKey: "type",
-          textFrontSize: 8,
-          linkDistance: 100
-        };
-      }
-    },
-    svgProps: {
-      type: Object,
-      default: () => {
-        return {
-          size: {
-            width: window.innerWidth,
-            height: window.innerHeight
-          },
-          theme: "light" // dark or light
-        };
-      }
-    },
+    svgTheme: {
+      type: String,
+      default: "dark"
+    }, // dark or light
+    //
     highlightNodes: Array
   },
   data() {
     return {
-      svgSize: {
-        width: "100%",
-        height: "100%"
-      },
+      // svgSize: {
+      //   width: "100%",
+      //   height: "100%"
+      // },
       // svgClass: {
       //   mouseup: true,
       //   mousedown: false
@@ -182,18 +196,18 @@ export default {
       return this.linkList;
     },
     theme() {
-      if (this.svgProps.theme === "light") {
+      if (this.svgTheme === "light") {
         return {
-          bgcolor: "white",
+          bgcolor: "rgba(255, 255, 255, 0.8)",
           nodeStroke: "white",
-          linkStroke: "lightgray",
-          textFill: "gray"
+          linkStroke: "gray",
+          textFill: "black"
         };
       } else {
         return {
-          bgcolor: "#222",
+          bgcolor: "rgba(0, 0, 0, 0.5)",
           nodeStroke: "white",
-          linkStroke: "white",
+          linkStroke: "rgba(255, 255, 255, 0.5)",
           textFill: "white"
         };
       }
@@ -221,9 +235,7 @@ export default {
         this.initDragTickZoom();
       });
     },
-    highlightNodes: function() {
-
-    }
+    highlightNodes: function() {}
   },
   // updated() {
   //   console.log("update")
@@ -276,23 +288,17 @@ export default {
           d3
             .forceLink(this.links)
             .id(d => d.id)
-            .distance(this.linkProps.linkDistance)
+            .distance(this.linkDistance)
           // .strength(100)
         )
         //.force("charge", d3.forceManyBody())
         // .linkDistance(50) //指定连线长度
 
-        .force(
-          "charge",
-          d3.forceManyBody().strength(-this.nodeProps.nodeSize * 15)
-        ) //The strength of the attraction or repulsion
+        .force("charge", d3.forceManyBody().strength(-this.nodeSize * 15)) //The strength of the attraction or repulsion
         // .forceCollide(2)
         .force(
           "center",
-          d3.forceCenter(
-            this.svgProps.size.width / 2,
-            this.svgProps.size.height / 2
-          )
+          d3.forceCenter(this.svgSize.width / 2, this.svgSize.height / 2)
         );
       // .alphaDecay(0.5) //设置 alpha 衰减率.迭代150，默认0.0228
 
@@ -420,7 +426,7 @@ export default {
         // console.log("坐标：");
         // console.log(e.clientX + ", " + e.clientY);
         // let link = e.target.__data__;
-        // console.log(link[this.linkProps.textKey])
+        // console.log(link[this.textKey])
         this.linkTextPosition = {
           left: e.clientX + "px",
           top: e.clientY - 50 + "px"
@@ -585,11 +591,12 @@ export default {
 
 <style scoped>
 #network {
-  width: 100%;
-  height: 100%;
+  /* width: 100%;
+  height: 100%; */
 }
 svg {
-  border: 1px solid #000;
+  /* border: 1px solid #000; */
+  border-radius: 5px;
   /* background-color:aliceblue */
 }
 /* svg.mouseup {
