@@ -46,7 +46,7 @@
             <circle
               :fill="nodeColor(node.type)"
               stroke-width="3"
-              :stroke="theme.nodeStroke"
+              :stroke="highlightNodes.indexOf(node.id) == -1? theme.nodeStroke: 'red' "
               :class="`${node.type} ${node.showText?'selected' : ''} node element`"
               :r="nodeProps.nodeSize"
             ></circle>
@@ -120,7 +120,8 @@ export default {
           theme: "light" // dark or light
         };
       }
-    }
+    },
+    highlightNodes: Array
   },
   data() {
     return {
@@ -219,10 +220,9 @@ export default {
         // 所以要使用 $nextTick
         this.initDragTickZoom();
       });
+    },
+    highlightNodes: function() {
 
-      // d3.selectAll(".node").call(this.drag(this.force));
-
-      // this.force.restart()
     }
   },
   // updated() {
@@ -282,7 +282,10 @@ export default {
         //.force("charge", d3.forceManyBody())
         // .linkDistance(50) //指定连线长度
 
-        .force("charge", d3.forceManyBody().strength(-this.nodeProps.nodeSize * 15)) //The strength of the attraction or repulsion
+        .force(
+          "charge",
+          d3.forceManyBody().strength(-this.nodeProps.nodeSize * 15)
+        ) //The strength of the attraction or repulsion
         // .forceCollide(2)
         .force(
           "center",
@@ -394,9 +397,7 @@ export default {
       // 这个监听器只能监听到非节点的内容
       // 改变鼠标样式
       // console.log("鼠标按下");
-
       // e.stopImmediatePropagation();
-
       // this.svgClass.mouseup = false;
       // this.svgClass.mousedown = true;
     },

@@ -11,40 +11,50 @@
       </div>
     </div>
     <div v-if="showContent" class="content">
-      <div class="cardContainer">
-        <Card style="width:350px">
-          <p slot="title">
-            <Icon type="ios-film-outline"></Icon>Classic film
-          </p>
-          <ul>
-            <li v-for="(item,index) in movieList" :key="index">
-              <a :href="item.url" target="_blank">{{ item.name }}</a>
-              <span>
-                <!-- <Icon type="ios-star" v-for="n in 4" :key="n"></Icon> -->
+      <div class="card-container">
+        <el-card class="box-card">
+          <div slot="header" class="clearfix">
+            <span>搜索结果</span>
+          </div>
+          <!-- <el-tree :data="treeData" :props="treeProps" @node-click="handleNodeClick"></el-tree> -->
 
-                <Icon type="ios-star" v-if="item.rate >= 2"></Icon>
-                <Icon type="ios-star-outline" v-else></Icon>
-                <Icon type="ios-star" v-if="item.rate >= 4"></Icon>
-                <Icon type="ios-star-outline" v-else></Icon>
-                <Icon type="ios-star" v-if="item.rate >= 6"></Icon>
-                <Icon type="ios-star-outline" v-else></Icon>
-                <Icon type="ios-star" v-if="item.rate >=8"></Icon>
-                <Icon type="ios-star-outline" v-else></Icon>
-                <Icon type="ios-star" v-if="item.rate >= 9.5"></Icon>
-                <Icon type="ios-star-half" v-else-if="item.rate >= 9"></Icon>
-                <Icon type="ios-star-outline" v-else></Icon>
-                {{ item.rate.toFixed(1) }}
-              </span>
-            </li>
-          </ul>
-        </Card>
+          <h3>电影</h3>
+          <el-checkbox-group v-model="highlightNodes">
+          <div v-for="item in movieData" :key="item.id" class="item">
+            <el-checkbox :label="item[nodeProps.textKey]"></el-checkbox>
+            <!-- <input type="checkbox"  :id="item.id" v-model="highlightNodes" :value="item.id" class="checkbox"> -->
+            <!-- <label :for="item.id" :style="{color: 'blue'}">{{item[nodeProps.textKey]}}</label> -->
+            <!-- <input type="checkbox" name="d" :id="item.id" v-model="highlightNodes" :value="item.id">{{item[nodeProps.textKey]}} -->
+            <!-- <el-button type="text" @click="clickTreeNode(item.id)">{{item[nodeProps.textKey]}}</el-button> -->
+            <span v-if="item.rate" class="rate-star">
+              <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
+              <i class="el-icon-star-off" v-else></i>
+              <i class="el-icon-star-on" v-if="item.rate >= 4"></i>
+              <i class="el-icon-star-off" v-else></i>
+              <i class="el-icon-star-on" v-if="item.rate >= 6"></i>
+              <i class="el-icon-star-off" v-else></i>
+              <i class="el-icon-star-on" v-if="item.rate >= 8"></i>
+              <i class="el-icon-star-off" v-else></i>
+              <i class="el-icon-star-on" v-if="item.rate >= 9.5"></i>
+              <i class="el-icon-star-off" v-else></i>
+              {{ item.rate.toFixed(1) }}
+            </span>
+          </div>
+          </el-checkbox-group>
+          <el-divider></el-divider>
+          <h3>人物</h3>
+          <div v-for="item in personData" :key="item.id" class="text item">
+            <!-- <el-button type="text" @click="clickTreeNode(item.id)">{{item[nodeProps.textKey]}}</el-button> -->
+          </div>
+        </el-card>
       </div>
-      <div class="networkContainer">
+      <div class="network-container">
         <network
           :nodeList="nodes"
           :linkList="links"
           :nodeProps="nodeProps"
           :linkProps="linkProps"
+          :highlightNodes="highlightNodes"
           @clickNode="clickNode"
         ></network>
       </div>
@@ -69,7 +79,7 @@ export default {
       nodeProps: {
         nodeSize: 20,
         showNodeText: false,
-        textKey: "name",
+        textKey: "id",
         textFrontSize: 20
       },
       linkProps: {
@@ -85,60 +95,39 @@ export default {
       // queryWords: ""
       searchKey: "",
       headTop: "30%",
-      showContent: false,
-      movieList: [
-        {
-          name: "The Shawshank Redemption",
-          url: "https://movie.douban.com/subject/1292052/",
-          rate: 6.0
-        },
-        {
-          name: "Leon:The Professional",
-          url: "https://movie.douban.com/subject/1295644/",
-          rate: 4.0
-        },
-        {
-          name: "Farewell to My Concubine",
-          url: "https://movie.douban.com/subject/1291546/",
-          rate: 9.5
-        },
-        {
-          name: "Forrest Gump",
-          url: "https://movie.douban.com/subject/1292720/",
-          rate: 8.0
-        },
-        {
-          name: "Life Is Beautiful",
-          url: "https://movie.douban.com/subject/1292063/",
-          rate: 9.5
-        },
-        {
-          name: "Spirited Away",
-          url: "https://movie.douban.com/subject/1291561/",
-          rate: 9.2
-        },
-        {
-          name: "Schindler's List",
-          url: "https://movie.douban.com/subject/1295124/",
-          rate: 8.5
-        },
-        {
-          name: "The Legend of 1900",
-          url: "https://movie.douban.com/subject/1292001/",
-          rate: 9.2
-        },
-        {
-          name: "WALL·E",
-          url: "https://movie.douban.com/subject/2131459/",
-          rate: 9.3
-        },
-        {
-          name: "Inception",
-          url: "https://movie.douban.com/subject/3541415/",
-          rate: 9.2
-        }
-      ]
+      showContent: false, 
+      highlightNodes: []
     };
+  },
+  computed: {
+    // treeProps() {
+    //   return { children: "children", label: this.nodeProps.textKey };
+    // },
+    // treeData() {
+    //   let movieItem = {};
+    //   movieItem[this.treeProps.children] = this.treeMovieData;
+    //   movieItem[this.treeProps.label] = "电影";
+    //   let personItem = {};
+    //   personItem[this.treeProps.children] = this.treePersonData;
+    //   personItem[this.treeProps.label] = "人物";
+
+    //   return [movieItem, personItem];
+    // },
+    personData() {
+      return this.nodes.filter(node => {
+        return node.type === "Person";
+      });
+    },
+    movieData() {
+      return this.nodes.filter(node => {
+        return node.type === "Movie";
+      });
+    }
+  },
+  watch: {
+    highlightNodes(newValue) {
+      console.log(newValue)
+    }
   },
   created() {
     axios
@@ -153,23 +142,26 @@ export default {
     // this.search()
   },
   methods: {
+    // clickTreeNode(id) {
+    //   this.highlightNodeId = id
+    // },
     search() {
       this.headTop = "10%";
       this.showContent = true;
-      axios
-        .get(`/api/${this.searchKey}`)
-        .then(res => {
-          console.log(res.data);
-          if (res.data.status === true) {
-            this.nodes = res.data.entity.nodes;
-            this.links = res.data.entity.links;
-          } else {
-            console.log("找不到");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      // axios
+      //   .get(`/api/${this.searchKey}`)
+      //   .then(res => {
+      //     console.log(res.data);
+      //     if (res.data.status === true) {
+      //       this.nodes = res.data.entity.nodes;
+      //       this.links = res.data.entity.links;
+      //     } else {
+      //       console.log("找不到");
+      //     }
+      //   })
+      //   .catch(err => {
+      //     console.error(err);
+      //   });
     },
     clickNode(e) {
       // console.log(e)
@@ -226,14 +218,55 @@ ul {
   top: 30%;
   display: flex;
 }
-.cardContainer {
+.card-container {
+  
   /* box-sizing: border-box; */
   flex: 1;
-  padding-left: 20px;
+
+  /* padding-left: 20px; */
   /* background-color: blue; */
 }
 
-.networkContainer {
+.box-card {
+  position: relative;
+  width: 380px;
+}
+
+.rate-star {
+  /* padding: 12px; */
+  color: orange;
+  position: absolute;
+  right: 30px;
+}
+
+.network-container {
   flex: 2;
+}
+
+.item {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.clearfix:before,
+.clearfix:after {
+  display: table;
+  content: "";
+}
+.clearfix:after {
+  clear: both;
+}
+
+
+.checkbox {
+  width: 60%;
+  position: absolute;
+  cursor: pointer;
+  background-color: blue;
+  /* -webkit-appearance:listbox */
+  /* opacity: 0; */
+}
+.checkbox:checked {
+  background: blue;
 }
 </style>
