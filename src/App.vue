@@ -11,7 +11,7 @@
 <style>
 html, body, #app, .home, .graph {
   height: 100%;
-  width: 100%
+  /* width: 1 */
 }
 
 body {

@@ -198,9 +198,9 @@ export default {
     theme() {
       if (this.svgTheme === "light") {
         return {
-          bgcolor: "rgba(255, 255, 255, 0.8)",
-          nodeStroke: "white",
-          linkStroke: "gray",
+          bgcolor: "rgba(255,255,240,0.5)",
+          nodeStroke: "black",
+          linkStroke: "rgba(50,50,100,0.5)",
           textFill: "black"
         };
       } else {
@@ -646,7 +646,7 @@ svg {
   /* height: 40px; */
   background-color: rgba(75, 75, 75, 0.596);
   border-radius: 10px;
-  color: white;
+  color:white;
   padding: 10px;
 }
 </style>

@@ -2,10 +2,10 @@
   <div class="home">
     <div class="filter"></div>
 
-    <div class="head" :style="{top: this.headTop}">
+    <div class="index" v-if="!showMain">
       <div>
-        <h1 class="title" v-if="showTitle">电影图谱</h1>
-        <p class="summary" v-if="showTitle">
+        <h1 class="title">电影图谱</h1>
+        <p class="summary">
           找寻电影
           <i class="el-icon-film"/> 与人物
           <i class="el-icon-user"/> 的关系
@@ -13,6 +13,7 @@
       </div>
       <div class="search-container">
         <el-input
+          :autofocus="true"
           placeholder="请输入关键词，例如周润发"
           prefix-icon="el-icon-search"
           v-model="searchKey"
@@ -22,94 +23,116 @@
       </div>
       <!-- <button @click="search">搜索</button> -->
     </div>
-      <el-button v-if="showContent" icon="el-icon-s-operation" circle @click="showSettingCard=!showSettingCard" class="setting"></el-button>
-    
 
-     <el-card v-if="showSettingCard" class="setting-box-card setting" >
+    <div class="main" v-if="showMain">
+      <div class="head">
+        <div class="logo">
+          <h1>电影图谱</h1>
+        </div>
+
+        <div class="search-container">
+          <el-input
+            placeholder="请输入关键词，例如周润发"
+            prefix-icon="el-icon-search"
+            v-model="searchKey"
+            @keyup.enter.native="search"
+            :style="{width: '500px'}"
+          ></el-input>
+        </div>
+
+        <div class="labels">
+          <el-button type="primary" plain size="small">信息按钮</el-button>
+          <el-button type="primary" plain size="small">信息按钮</el-button>
+          <el-button type="primary" plain size="small">信息按钮</el-button>
+          <el-button type="primary" plain size="small">信息按钮</el-button>
+          <el-button type="primary" plain size="small">信息按钮</el-button>
+        </div>
+
+        <el-button icon="el-icon-s-operation" circle @click="showSettingCard=!showSettingCard"></el-button>
+      </div>
+
+      <el-card class="setting-box-card setting" v-if="showSettingCard">
         <div slot="header" class="clearfix">
           <span>设置</span>
-          <el-button style="float: right; padding: 3px 0" type="text" @click="showSettingCard=!showSettingCard">关闭</el-button>
+          <el-button
+            style="float: right; padding: 3px 0"
+            type="text"
+            @click="showSettingCard=!showSettingCard"
+          >关闭</el-button>
+        </div>节点大小
+        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>边粗细
+        <el-slider v-model="linkWidth" show-input :max="20"></el-slider>边长度
+        <el-slider v-model="linkDistance" show-input :max="300" :step="50"></el-slider>
+        <br>
+        <div>
+          <el-switch v-model="svgTheme" active-text="黑暗模式" inactive-text="明亮模式"></el-switch>
         </div>
-        节点大小
-        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>
-        边粗细
-        <el-slider v-model="linkWidth" show-input :max="20" ></el-slider>
-        边长度
-         <el-slider v-model="linkDistance" show-input :max="300" :step="50" ></el-slider>
-    <br />
-    <div>
-      <el-switch
-  v-model="svgTheme"
-  active-text="黑暗模式"
-  inactive-text="明亮模式">
-</el-switch>
-</div>
-      
-        
       </el-card>
 
-    <div v-if="showContent" class="content">
-      <div class="card-container">
-        <el-card class="result-box-card">
-          <div slot="header" class="clearfix">
-            <span>搜索结果</span>
-          </div>
-          <!-- <el-tree :data="treeData" :props="treeProps" @node-click="handleNodeClick"></el-tree> -->
-
-          <h3>电影</h3>
-          <el-checkbox-group v-model="highlightNodes">
-            <div v-for="item in movieData" :key="item.id" class="item">
-              <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
-              <span v-if="item.rate" class="rate-star">
-                <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
-                <i class="el-icon-star-off" v-else></i>
-                <i class="el-icon-star-on" v-if="item.rate >= 4"></i>
-                <i class="el-icon-star-off" v-else></i>
-                <i class="el-icon-star-on" v-if="item.rate >= 6"></i>
-                <i class="el-icon-star-off" v-else></i>
-                <i class="el-icon-star-on" v-if="item.rate >= 8"></i>
-                <i class="el-icon-star-off" v-else></i>
-                <i class="el-icon-star-on" v-if="item.rate >= 9.5"></i>
-                <i class="el-icon-star-off" v-else></i>
-                {{ item.rate.toFixed(1) }}
-              </span>
+      <div v-if="showContent" class="content">
+        <div class="card-container">
+          <el-card class="result-box-card">
+            <div slot="header" class="clearfix">
+              <span>搜索结果</span>
             </div>
-          </el-checkbox-group>
-          <el-divider></el-divider>
+            <!-- <el-tree :data="treeData" :props="treeProps" @node-click="handleNodeClick"></el-tree> -->
 
-          <h3>人物</h3>
-          <el-checkbox-group v-model="highlightNodes">
-            <template v-if="personData">
-              <div v-for="item in personData" :key="item.id" class="text item">
+            <h3>电影</h3>
+            <el-checkbox-group v-model="highlightNodes">
+              <div v-for="item in movieData" :key="item.id" class="item">
                 <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
+                <span v-if="item.rate" class="rate-star">
+                  <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
+                  <i class="el-icon-star-off" v-else></i>
+                  <i class="el-icon-star-on" v-if="item.rate >= 4"></i>
+                  <i class="el-icon-star-off" v-else></i>
+                  <i class="el-icon-star-on" v-if="item.rate >= 6"></i>
+                  <i class="el-icon-star-off" v-else></i>
+                  <i class="el-icon-star-on" v-if="item.rate >= 8"></i>
+                  <i class="el-icon-star-off" v-else></i>
+                  <i class="el-icon-star-on" v-if="item.rate >= 9.5"></i>
+                  <i class="el-icon-star-off" v-else></i>
+                  {{ item.rate.toFixed(1) }}
+                </span>
               </div>
-            </template>
-            <p v-else :style="{color: 'gray', 'font-size':'14px'}">无数据</p>
-          </el-checkbox-group>
-        </el-card>
+            </el-checkbox-group>
+            <el-divider></el-divider>
+
+            <h3>人物</h3>
+            <el-checkbox-group v-model="highlightNodes">
+              <template v-if="personData">
+                <div v-for="item in personData" :key="item.id" class="text item">
+                  <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
+                </div>
+              </template>
+              <p v-else :style="{color: 'gray', 'font-size':'14px'}">无数据</p>
+            </el-checkbox-group>
+          </el-card>
+        </div>
+        <div class="network-container">
+          <network
+            :nodeList="nodes"
+            :linkList="links"
+            :nodeSize="nodeSize"
+            :nodeTextKey="nodeTextKey"
+            :nodeTextFrontSize="nodeTextFrontSize"
+            :linkWidth="linkWidth"
+            :showLinkText="showLinkText"
+            :linkTextKey="linkTextKey"
+            :linkTextFrontSize="linkTextFrontSize"
+            :linkDistance="linkDistance"
+            :svgSize="svgSize"
+            :svgTheme="svgTheme?'dark':'light'"
+            :highlightNodes="highlightNodes"
+            @clickNode="clickNode"
+          ></network>
+        </div>
       </div>
-      <div class="network-container">
-        <network
-          :nodeList="nodes"
-          :linkList="links"
-          :nodeSize="nodeSize"
-          :nodeTextKey="nodeTextKey"
-          :nodeTextFrontSize="nodeTextFrontSize"
-          :linkWidth="linkWidth"
-          :showLinkText="showLinkText"
-          :linkTextKey="linkTextKey"
-          :linkTextFrontSize="linkTextFrontSize"
-          :linkDistance="linkDistance"
-          :svgSize="svgSize"
-          :svgTheme="svgTheme?'dark':'light'"
-          :highlightNodes="highlightNodes"
-          @clickNode="clickNode"
-        ></network>
+      <!-- <div v-if="showNothingFound" class="nothing-found"> -->
+      <div v-else class="nothing-found">
+        <i class="el-icon-circle-close"/>
+        没有找到任何内容
       </div>
-    </div>
-    <div v-if="showNothingFound" class="nothing-found">
-      <i class="el-icon-circle-close"/>
-      没有找到任何内容
     </div>
   </div>
 </template>
@@ -120,6 +143,7 @@ import axios from "axios";
 
 export default {
   name: "home",
+
   components: {
     Network
   },
@@ -146,10 +170,13 @@ export default {
       svgTheme: true,
       nodeIds: [], // 用于判断重复节点
       searchKey: "",
-      headTop: "30%",
+      // headTop: "30%",
+      // headMoveX: 0,
+      // headMoveY: 0,
+      showMain: false,
       showContent: false,
       showNothingFound: false,
-      showTitle: true,
+      // showTitle: true,
       highlightNodes: [],
       showSettingCard: false
     };
@@ -188,10 +215,12 @@ export default {
     //   this.highlightNodeId = id
     // },
     search() {
-      this.headTop = "10px";
+      // this.headMoveX = "-200px";
+      // this.headMoveY = "-230px";
+      this.showMain = true;
       this.showContent = true;
-      this.showNothingFound = false;
-      this.showTitle = false;
+      // this.showNothingFound = false;
+      // this.showTitle = false;
       // axios
       //   .get(`/api/${this.searchKey}`)
       //   .then(res => {
@@ -241,9 +270,12 @@ ul {
   list-style-type: none;
 }
 .home {
+  /* background-color: gray; */
   background-image: url(/bg.jpg);
-  background-repeat: repeat;
-  overflow: hidden;
+  -moz-background-size: 100% 100%;
+  background-size: 100% 100%;
+  /* background-repeat: repeat; */
+  /* overflow: auto; */
 }
 
 .filter {
@@ -253,16 +285,29 @@ ul {
   background-color: rgba(0, 0, 0, 0.37);
 }
 
-.head {
+.index {
   width: 400px;
   position: absolute;
-  /* top: 30%; */
+  top: 20%;
   left: 32%;
   color: rgb(255, 255, 255);
   /* margin: 0 auto; */
 }
-.content {
+
+.main {
   position: absolute;
+  width: 100%;
+  overflow: auto;
+}
+
+.head {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.content {
+  /* position: absolute; */
   /* left: 50%; */
   /* width: 100%; */
   /* height: 100%; */
@@ -285,11 +330,7 @@ ul {
   position: relative;
   width: 380px;
   max-height: 700px;
-  
-
 }
-
-
 
 .rate-star {
   /* padding: 12px; */
@@ -330,18 +371,19 @@ ul {
 }
 
 .search-container {
+  /* height: 40px; */
   width: 500px;
   padding: 5px;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 5px;
 }
-.head-enter-active,
+/* .head-enter-active,
 .head-leave-active {
   transition: opacity 0.5s;
 }
-.head-enter, .head-leave-to /* .head-leave-active below version 2.1.8 */ {
+.head-enter, .head-leave-to  {
   opacity: 0;
-}
+} */
 .nothing-found {
   position: absolute;
   top: 150px;
@@ -362,7 +404,5 @@ ul {
   /* position: relative; */
   width: 380px;
   max-height: 700px;
-  
-
 }
 </style>
