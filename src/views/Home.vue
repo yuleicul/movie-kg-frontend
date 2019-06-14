@@ -41,11 +41,11 @@
         </div>
 
         <div class="labels">
-          <el-button type="primary" plain size="small">信息按钮</el-button>
-          <el-button type="primary" plain size="small">信息按钮</el-button>
-          <el-button type="primary" plain size="small">信息按钮</el-button>
-          <el-button type="primary" plain size="small">信息按钮</el-button>
-          <el-button type="primary" plain size="small">信息按钮</el-button>
+          <el-button type="primary" plain size="small" @click="searchByTag('周润发')">周润发</el-button>
+          <el-button type="primary" plain size="small" @click="searchByTag('加勒比海盗')">加勒比海盗</el-button>
+          <el-button type="primary" plain size="small" @click="searchByTag('成龙')">成龙</el-button>
+          <el-button type="primary" plain size="small" @click="getHighRateMovies">豆瓣高分电影</el-button>
+          <el-button type="primary" plain size="small" @click="getPeopleFilmMost">拍电影数量最多的演员是谁？</el-button>
         </div>
 
         <el-button icon="el-icon-s-operation" circle @click="showSettingCard=!showSettingCard"></el-button>
@@ -60,16 +60,17 @@
             @click="showSettingCard=!showSettingCard"
           >关闭</el-button>
         </div>节点大小
-        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>边粗细
-        <el-slider v-model="linkWidth" show-input :max="20"></el-slider>边长度
-        <el-slider v-model="linkDistance" show-input :max="300" :step="50"></el-slider>
+        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>边的粗细
+        <el-slider v-model="linkWidth" show-input :max="20"></el-slider>边的长度
+        <el-slider v-model="linkDistance" show-input :max="300" :step="50" show-stops></el-slider>作用力大小
+        <el-slider v-model="bodyStrength" show-input :min="-1000" :max="0" :step="50" show-stops></el-slider>
         <br>
         <div>
           <el-switch v-model="svgTheme" active-text="黑暗模式" inactive-text="明亮模式"></el-switch>
         </div>
       </el-card>
 
-      <div v-if="showContent" class="content">
+      <div class="content">
         <div class="card-container">
           <el-card class="result-box-card">
             <div slot="header" class="clearfix">
@@ -79,30 +80,35 @@
 
             <h3>电影</h3>
             <el-checkbox-group v-model="highlightNodes">
-              <div v-for="item in movieData" :key="item.id" class="item">
-                <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
-                <span v-if="item.rate" class="rate-star">
-                  <i class="el-icon-star-on" v-if="item.rate >= 2"></i>
-                  <i class="el-icon-star-off" v-else></i>
-                  <i class="el-icon-star-on" v-if="item.rate >= 4"></i>
-                  <i class="el-icon-star-off" v-else></i>
-                  <i class="el-icon-star-on" v-if="item.rate >= 6"></i>
-                  <i class="el-icon-star-off" v-else></i>
-                  <i class="el-icon-star-on" v-if="item.rate >= 8"></i>
-                  <i class="el-icon-star-off" v-else></i>
-                  <i class="el-icon-star-on" v-if="item.rate >= 9.5"></i>
-                  <i class="el-icon-star-off" v-else></i>
-                  {{ item.rate.toFixed(1) }}
-                </span>
-              </div>
+              <template v-if="movieData.length">
+                <div v-for="item in movieData" :key="item.id" class="item">
+                  <el-checkbox :label="item.id">
+                    <span class="item-name">{{item[nodeTextKey]}}</span>
+                  </el-checkbox>
+                  <span v-if="item.rating" class="rate-star">
+                    <i class="el-icon-star-on" v-if="item.rating >= 2"></i>
+                    <i class="el-icon-star-off" v-else></i>
+                    <i class="el-icon-star-on" v-if="item.rating >= 4"></i>
+                    <i class="el-icon-star-off" v-else></i>
+                    <i class="el-icon-star-on" v-if="item.rating >= 6"></i>
+                    <i class="el-icon-star-off" v-else></i>
+                    <i class="el-icon-star-on" v-if="item.rating >= 8"></i>
+                    <i class="el-icon-star-off" v-else></i>
+                    <i class="el-icon-star-on" v-if="item.rating >= 9.5"></i>
+                    <i class="el-icon-star-off" v-else></i>
+                    {{ item.rating }}
+                  </span>
+                </div>
+              </template>
+              <p v-else :style="{color: 'gray', 'font-size':'14px'}">无数据</p>
             </el-checkbox-group>
             <el-divider></el-divider>
 
             <h3>人物</h3>
             <el-checkbox-group v-model="highlightNodes">
-              <template v-if="personData">
+              <template v-if="personData.length">
                 <div v-for="item in personData" :key="item.id" class="text item">
-                  <el-checkbox :label="item[nodeTextKey]"></el-checkbox>
+                  <el-checkbox :label="item.id" class="item-name">{{item[nodeTextKey]}}</el-checkbox>
                 </div>
               </template>
               <p v-else :style="{color: 'gray', 'font-size':'14px'}">无数据</p>
@@ -115,7 +121,8 @@
             :linkList="links"
             :nodeSize="nodeSize"
             :nodeTextKey="nodeTextKey"
-            :nodeTextFrontSize="nodeTextFrontSize"
+            :nodeTypeKey="nodeTypeKey"
+            :nodeTextFontSize="nodeTextFontSize"
             :linkWidth="linkWidth"
             :showLinkText="showLinkText"
             :linkTextKey="linkTextKey"
@@ -123,16 +130,17 @@
             :linkDistance="linkDistance"
             :svgSize="svgSize"
             :svgTheme="svgTheme?'dark':'light'"
+            :bodyStrength="bodyStrength"
             :highlightNodes="highlightNodes"
             @clickNode="clickNode"
           ></network>
         </div>
       </div>
       <!-- <div v-if="showNothingFound" class="nothing-found"> -->
-      <div v-else class="nothing-found">
+      <!-- <div v-else class="nothing-found">
         <i class="el-icon-circle-close"/>
         没有找到任何内容
-      </div>
+      </div>-->
     </div>
   </div>
 </template>
@@ -149,39 +157,39 @@ export default {
   },
   data() {
     return {
-      showLinkText: false,
       nodes: [],
       links: [],
-      //
-      nodeSize: 20,
-      nodeTextKey: "id",
-      nodeTextFrontSize: 20,
-      //
+      // node
+      nodeSize: 14,
+      nodeTextKey: "name",
+      nodeTypeKey: "type",
+      // nodeTextFontSize: 14,
+      // link
       linkWidth: 2,
       showLinkText: false,
       linkTextKey: "value",
       linkTextFrontSize: 10,
-      linkDistance: 100,
-      //
+      linkDistance: 150,
+      // svg
       svgSize: {
         width: 950,
         height: 700
       },
-      svgTheme: true,
+      svgTheme: true, // dark
+      bodyStrength: -50,
       nodeIds: [], // 用于判断重复节点
       searchKey: "",
-      // headTop: "30%",
-      // headMoveX: 0,
-      // headMoveY: 0,
       showMain: false,
-      showContent: false,
-      showNothingFound: false,
-      // showTitle: true,
       highlightNodes: [],
       showSettingCard: false
     };
   },
   computed: {
+    nodeTextFontSize() {
+      if (this.nodeSize >= 10) {
+        return this.nodeSize;
+      } else return 10;
+    },
     personData() {
       return this.nodes.filter(node => {
         return node.type === "Person";
@@ -199,18 +207,84 @@ export default {
     }
   },
   created() {
-    axios
-      .get("/example.json")
-      .then(response => {
-        this.nodes = response.data.nodes;
-        this.links = response.data.links;
-        // this.canRender = true;
-      })
-      .catch(err => console.log(err));
+    // axios
+    //   .get("/example.json")
+    //   .then(response => {
+    //     this.nodes = response.data.nodes;
+    //     this.links = response.data.links;
+    //     // this.canRender = true;
+    //   })
+    //   .catch(err => console.log(err));
     // this.searchKey = this.$route.params.keyWord
     // this.search()
   },
   methods: {
+    getPeopleFilmMost() {
+      this.searchKey = "";
+      axios
+        .get("/api/people/filmmost")
+        .then(res => {
+          console.log(res.data);
+          if (res.data.status === true) {
+            this.nodes = res.data.entity.nodes;
+            // nodes 去重
+            this.clearDup();
+            this.links = res.data.entity.links;
+            // this.showContent = true;
+          } else {
+            console.log("没有找到拍电影最多的演员");
+            // this.showContent = true;
+            this.nodes = [];
+            this.links = [];
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    getHighRateMovies() {
+      this.searchKey = "";
+      axios
+        .get(`/api/movies/highrate`)
+        .then(res => {
+          console.log(res.data);
+          if (res.data.status === true) {
+            this.nodes = res.data.entity.nodes;
+            // nodes 去重
+            this.clearDup();
+            this.links = res.data.entity.links;
+            // this.showContent = true;
+          } else {
+            console.log("没有高分电影");
+            // this.showContent = true;
+            this.nodes = [];
+            this.links = [];
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    searchByTag(key) {
+      this.searchKey = key;
+      this.search();
+    },
+    clearDup() {
+      let nodes = this.nodes.slice();
+      let nodeIds = [];
+
+      this.nodes = nodes.filter(node => {
+        if (nodeIds.indexOf(node.id) === -1) {
+          // console.log(node.id);
+          nodeIds.push(node.id);
+          return true;
+        } else {
+          return false;
+        }
+      });
+
+      // return nodes;
+    },
     // clickTreeNode(id) {
     //   this.highlightNodeId = id
     // },
@@ -218,39 +292,41 @@ export default {
       // this.headMoveX = "-200px";
       // this.headMoveY = "-230px";
       this.showMain = true;
-      this.showContent = true;
       // this.showNothingFound = false;
       // this.showTitle = false;
-      // axios
-      //   .get(`/api/${this.searchKey}`)
-      //   .then(res => {
-      //     console.log(res.data);
-      //     if (res.data.status === true) {
-      //       this.nodes = res.data.entity.nodes;
-      //       this.links = res.data.entity.links;
-      //  this.showContent = true;
-      //  this.showNothingFound = false;
-
-      //     } else {
-      //       console.log("找不到");
-      //  this.showNothingFound = true;
-      //  this.showContent = false;
-      //     }
-      //   })
-      //   .catch(err => {
-      //     console.error(err);
-      //   });
+      axios
+        .get(`/api/${this.searchKey}`)
+        .then(res => {
+          console.log(res.data);
+          if (res.data.status === true) {
+            this.nodes = res.data.entity.nodes;
+            // nodes 去重
+            this.clearDup();
+            this.links = res.data.entity.links;
+            // this.showContent = true;
+          } else {
+            console.log("找不到");
+            // this.showContent = true;
+            this.nodes = [];
+            this.links = [];
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
     },
-    clickNode(e) {
+    clickNode(e, nodeObj) {
       // console.log(e)
       if (e.detail === 2) {
-        let name = e.target.__data__.name;
+        let name = nodeObj.name;
+        console.log(nodeObj.name)
         axios
           .get(`/api/${name}`)
           .then(res => {
             console.log(res.data);
             if (res.data.status === true) {
               this.nodes = this.nodes.concat(res.data.entity.nodes);
+              this.clearDup();
               this.links = this.links.concat(res.data.entity.links);
             } else {
               console.log("找不到");
@@ -333,7 +409,7 @@ ul {
 }
 
 .rate-star {
-  /* padding: 12px; */
+  margin-top: 5px;
   color: orange;
   position: absolute;
   right: 30px;
@@ -384,13 +460,13 @@ ul {
 .head-enter, .head-leave-to  {
   opacity: 0;
 } */
-.nothing-found {
+/* .nothing-found {
   position: absolute;
   top: 150px;
   left: 46%;
   color: white;
   font-size: 14px;
-}
+} */
 
 .setting {
   position: absolute;
@@ -404,5 +480,21 @@ ul {
   /* position: relative; */
   width: 380px;
   max-height: 700px;
+}
+
+.logo {
+  /* letter-spacing: 3px; */
+  color: white;
+  text-shadow: 0 0 5px black;
+}
+.item-name {
+  /* margin-top: 10px; */
+  position: relative;
+  top: 6px;
+  display: block;
+  width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

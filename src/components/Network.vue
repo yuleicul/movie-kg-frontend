@@ -1,6 +1,5 @@
 <template>
   <div id="network" :style="{width: svgSize.width +'px', height: svgSize.height+'px'}">
-    <!-- <button id="reset-button" @click="reset">reset</button> -->
     <div
       class="linkText"
       :style="linkTextPosition"
@@ -14,8 +13,6 @@
       :height="svgSize.height"
       :style="{'background-color': theme.bgcolor}"
       @click="clickEle"
-      @mousedown="svgMousedown"
-      @mouseup="svgMouseup"
       @mouseover.prevent="svgMouseover"
       @mouseout="svgMouseout"
     >
@@ -24,7 +21,7 @@
         <g>
           <g v-for="link in links" :key="link.index">
             <line
-              :class="`${link.type} ${link.selected} link element`"
+              :class="`${link[linkTypeKey]} ${link.selected} link element`"
               :stroke="theme.linkStroke"
               :stroke-width="linkWidth"
             ></line>
@@ -44,19 +41,19 @@
         <g id="node-group">
           <g v-for="node in nodes" :key="node.index">
             <circle
-              :fill="nodeColor(node.type)"
+              :fill="nodeColor(node[nodeTypeKey])"
               :stroke-width="highlightNodes.indexOf(node.id) == -1? 3:10"
               :stroke="highlightNodes.indexOf(node.id) == -1? theme.nodeStroke: 'gold' "
-              :class="`${node.type} ${node.showText?'selected' : ''} node element`"
+              :class="`${node[nodeTypeKey]} ${node.showText?'selected' : ''} node element`"
               :r="nodeSize"
             ></circle>
             <text
               v-show="node.showText"
-              :dx="nodeSize"
+              :dx="nodeSize + 5"
               dy="0"
               class="node-text"
               :fill="theme.textFill"
-              :font-size="nodeTextFrontSize"
+              :font-size="nodeTextFontSize"
             >{{node[nodeTextKey]}}</text>
           </g>
           <g></g>
@@ -68,15 +65,10 @@
 </template>
 
 <script>
-import * as d3 from "d3"; // 先这样导入 最后优化的时候要按需导入
+import * as d3 from "d3"; 
 import d3SelectionMulti from "d3-selection-multi";
-import { setTimeout } from "timers";
 
 // const d3 = Object.assign({}, d3Origin, d3SelectionMulti)
-
-// let x = 0,
-//   y = 0,
-//   s = 1; // 记录缩放导致的位置偏移
 
 // 元素的 classList 是 DOMTokenList
 DOMTokenList.prototype.indexOf = Array.prototype.indexOf;
@@ -89,15 +81,19 @@ export default {
     // node
     nodeSize: {
       type: Number,
-      default: 20
+      default: 14
     },
     nodeTextKey: {
       type: String,
-      default: "name"
+      default: "id"
     },
-    nodeTextFrontSize: {
+    nodeTypeKey: {
+      type: String,
+      default: "group"
+    },
+    nodeTextFontSize: {
       type: Number,
-      default: 20
+      default: 14
     },
     // link
     linkWidth: {
@@ -108,7 +104,11 @@ export default {
       type: Boolean,
       default: false
     },
-    textKey: {
+    linkTextKey: {
+      type: String,
+      default: "value"
+    },
+    linkTypeKey: {
       type: String,
       default: "type"
     },
@@ -118,7 +118,7 @@ export default {
     },
     linkDistance: {
       type: Number,
-      default: 100
+      default: 150
     },
     // svg
     svgSize: {
@@ -132,29 +132,30 @@ export default {
     },
     svgTheme: {
       type: String,
-      default: "dark"
-    }, // dark or light
-    //
-    highlightNodes: Array
+      default: "dark" // dark or light
+    }, 
+    bodyStrength: {
+      type: Number,
+      default: -50
+    },
+    // others
+    highlightNodes: {
+      type: Array,
+      default: () => {
+        return []
+      }
+    }
   },
   data() {
     return {
-      // svgSize: {
-      //   width: "100%",
-      //   height: "100%"
-      // },
-      // svgClass: {
-      //   mouseup: true,
-      //   mousedown: false
-      // },
       selection: {
         links: [],
         nodes: []
       },
-      pinned: [], // 被订住的中心节点的下标
+      pinned: [], // 被订住的节点的下标
       force: null,
       zoom: d3.zoom(),
-      nodeColor: d3.scaleOrdinal(d3.schemeCategory10), // d3.scale.category20()
+      nodeColor: d3.scaleOrdinal(d3.schemeCategory10),
       linkTextVisible: false,
       linkTextPosition: {
         top: 0,
@@ -164,32 +165,18 @@ export default {
     };
   },
   computed: {
-    //  // 是否渲染节点 - 懒加载
-    // display(x, y) {
-    //   // if (x > 0 && y > 0) {
-    //   //   return true
-    //   // }
-    //   // else {
-    //     console.log(x + ' ' + y)
-    //   //   return false
-    //   // }
-    // },
     nodes() {
       // 去重
       let nodes = this.nodeList.slice();
       let nodeIds = [];
-
       nodes = nodes.filter(node => {
         if (nodeIds.indexOf(node.id) === -1) {
-          // console.log(node.id);
           nodeIds.push(node.id);
           return true;
         } else {
           return false;
         }
       });
-
-      // console.log(nodes);
       return nodes;
     },
     links() {
@@ -214,26 +201,22 @@ export default {
     }
   },
   watch: {
-    linkDistance: function() {
+    bodyStrength: function() {
+      this.initData();
       this.$nextTick(function() {
-      this.initData()
-      })
+        this.initDragTickZoom();
+      });
+    },
+    linkDistance: function() {
+      this.initData();
+      this.$nextTick(function() {
+        this.initDragTickZoom();
+      });
+      
     },
     nodes: function() {
-      // this.rerender = false
-      // this.rerender = true
-      // this.force.stop()
       this.initData();
-      // setTimeout( this.initDragTickZoom(), 1000)
-      // d3.selectAll(".node").call();
-      // d3.selectAll(".node").call(this.drag(this.force));
-      // d3.selectAll(".node").call(this.drag(this.force));
-
-      // this.$forceUpdate();
-
-      // this.$forceUpdate();
       this.$nextTick(function() {
-        // console.log("神奇");
         // 以下这个函数重新在 node 上调用了拖拽
         // 只有在 mounted 后才有用
         // 所以要使用 $nextTick
@@ -241,48 +224,12 @@ export default {
       });
     }
   },
-  // updated() {
-  //   console.log("update")
-  //     // d3.selectAll(".node").call(this.drag(this.force));
-
-  // },
   created() {
     this.initData();
-    // 初始化 zoom
-    // this.zoom
-    //   // .translate([0, 0]) // 初始位置
-    //   // .scale(1) // 初始比例
-    //   .scaleExtent([0.5, 4])
-    //   .on("zoom", this.zoomed); //??? 直接写在<svg>上了不知是否ok
-    // console.log("开始创建");
-    // console.log(this.nodes);
-
-    // let i = 0;
-    // this.links.forEach(link => {
-    //   link.id = i++;
-    // });
-
-    // 初始化 force 布局
-
-    // .nodes(this.nodes)
-    // .links(this.links)
-    // .size([this.forceSize.width, this.forceSize.height]) //指定作用域范围
-    // .linkDistance(50) //指定连线长度
-    // .friction(0.9)
-    // .charge([-200]) //相互之间的作用力
-    // .gravity(0.2);
   },
   mounted() {
-    // console.log("mounted");
     this.initDragTickZoom();
   },
-  // updated() {
-  // console.log("有数据更新")
-  // console.log("节点更新了")
-  // if (this.nodes)
-  // this.initData()
-  // this.initDragTickZoom()
-  // },
   methods: {
     initData() {
       this.force = d3
@@ -293,20 +240,12 @@ export default {
             .forceLink(this.links)
             .id(d => d.id)
             .distance(this.linkDistance)
-          // .strength(100)
         )
-        //.force("charge", d3.forceManyBody())
-        // .linkDistance(50) //指定连线长度
-
-        .force("charge", d3.forceManyBody().strength(-this.nodeSize * 15)) //The strength of the attraction or repulsion
-        // .forceCollide(2)
+        .force("charge", d3.forceManyBody().strength(this.bodyStrength)) //The strength of the attraction or repulsion
         .force(
           "center",
           d3.forceCenter(this.svgSize.width / 2, this.svgSize.height / 2)
-        );
-      // .alphaDecay(0.5) //设置 alpha 衰减率.迭代150，默认0.0228
-
-      // this.force.start(); //开始作用
+        )
 
       console.log(this.nodes);
       console.log(this.links);
@@ -314,15 +253,9 @@ export default {
     initDragTickZoom() {
       // 给节点添加拖拽
       d3.selectAll(".node").call(this.drag(this.force));
-      // 更新坐标 - 更新坐标 - 每一个 tick
-
       this.force
-        //  .nodes(this.nodes)
-
-        //  .force("link")
-        // .links(this.links)
         .on("tick", () => {
-          //更新连线坐标
+          // 更新连线坐标
           d3.selectAll(".link")
             .data(this.links)
             .attrs({
@@ -331,16 +264,7 @@ export default {
               x2: d => d.target.x,
               y2: d => d.target.y
             });
-
-          //       //  link
-          //     .attr("x1", d => d.source.x)
-          //     .attr("y1", d => d.source.y)
-          //     .attr("x2", d => d.target.x)
-          //     .attr("y2", d => d.target.y);
-
-          // // node
-
-          //更新节点坐标
+          // 更新节点坐标
           d3.selectAll(".node")
             .data(this.nodes)
             .attrs({
@@ -362,29 +286,19 @@ export default {
             });
         });
 
-      // // 初始化 zoom
+      // 初始化 zoom
       this.zoom
-        // .translate([0, 0]) // 初始位置
-        // .scale(1) // 初始比例
-        .scaleExtent([0.5, 4])
-        .on("zoom", this.zoomed); //??? 直接写在<svg>上了不知是否ok
+        .scaleExtent([0.1, 4])
+        .on("zoom", this.zoomed); 
 
       d3.select("svg")
         .call(this.zoom)
         .on("dblclick.zoom", null);
-      // .call(this.zoom.event);
     },
     clickLink(e) {
-      this.$emit("clickLink", e);
-      // console.log("嘿，点击边了");
-      // let link = e.target.__data__;
-      // console.log(link.source.name + " vs " + link.target.name);
-      // this.showDetails(link.source.name + " vs " + link.target.name);
+      this.$emit("clickLink", e, e.target.__data__);
     },
     clickNode(e) {
-      // if (e.target.tagName === "circle") {
-      // 阻止鼠标按下事件向下传播 -> 防止触发 zoom 的拖拽
-      // e.stopImmediatePropagation();
       if (this.pinned.length === 0) {
         this.pinnedState(e);
       } else {
@@ -393,8 +307,7 @@ export default {
         });
         this.pinned = [];
       }
-      this.$emit("clickNode", e);
-      // }
+      this.$emit("clickNode", e, e.target.__data__);
     },
     clickEle(e) {
       if (e.target.tagName === "circle") {
@@ -403,20 +316,6 @@ export default {
         this.clickLink(e);
       }
     },
-    svgMousedown(e) {
-      // 这个监听器只能监听到非节点的内容
-      // 改变鼠标样式
-      // console.log("鼠标按下");
-      // e.stopImmediatePropagation();
-      // this.svgClass.mouseup = false;
-      // this.svgClass.mousedown = true;
-    },
-    svgMouseup() {
-      // 改变鼠标样式
-      // console.log("鼠标放");
-      // this.svgClass.mouseup = true;
-      // this.svgClass.mousedown = false;
-    },
     svgMouseover(e) {
       if (e.target.nodeName === "circle") {
         if (this.pinned.length === 0) {
@@ -424,23 +323,16 @@ export default {
         }
         // 强制刷新
         this.$forceUpdate();
-        this.$emit("hoverNode", e.target);
+        this.$emit("hoverNode", e, e.target.__data__);
       } else if (e.target.nodeName === "line") {
-        // console.log("嘿 hover 边");
-        // console.log("坐标：");
-        // console.log(e.clientX + ", " + e.clientY);
-        // let link = e.target.__data__;
-        // console.log(link[this.textKey])
+        // 显示关系文本
         this.linkTextPosition = {
           left: e.clientX + "px",
           top: e.clientY - 50 + "px"
         };
-        this.linkTextContent = e.target.__data__.value;
+        this.linkTextContent = e.target.__data__[this.linkTextKey];
         this.linkTextVisible = true;
-        // setTimeout(() => {
-        //   this.linkTextVisible = false;
-        // }, 3000);
-        this.$emit("hoverLink", e); // e / e.target.__data__
+        this.$emit("hoverLink", e, e.target.__data__); 
       }
     },
     svgMouseout(e) {
@@ -524,19 +416,8 @@ export default {
       this.selection.nodes = [];
       this.selection.links = [];
     },
-    showDetails(query) {
-      // const query = resolveQueryFromLink(link.fromId, link.toId);
-      window.open(
-        "https://google.com/search?q=" + encodeURIComponent(query),
-        "_blank"
-      );
-    },
     zoomed() {
       // 缩放中：以鼠标所在的位置为中心
-      // console.log(d3.event);
-      // x = d3.event.transform.x;
-      // y = d3.event.transform.y;
-      // s = d3.event.transform.k;
       d3.select("#container").attr(
         "transform",
         "translate(" +
@@ -572,81 +453,31 @@ export default {
         .on("drag", dragged)
         .on("end", dragended);
     }
-    // reset() {
-    //   let zoom = this.zoom;
-    //   d3.transition()
-    //     .duration(250)
-    //     .tween("zoom", function() {
-    //       let si = d3.interpolate(s, 1);
-    //       let xi = d3.interpolate(x, 0);
-    //       let yi = d3.interpolate(y, 0);
-    //       return function(t) {
-    //         console.log(zoom);
-    //         d3.select("svg").call(
-    //           // zoom.transform([si(t),xi(t),yi(t)])
-    //           zoom.translate([xi(t), yi(t)]).scale(si(t)).event
-    //         );
-    //       };
-    //     });
-    // }
   }
 };
 </script>
 
 <style scoped>
-#network {
-  /* width: 100%;
-  height: 100%; */
-}
 svg {
-  /* border: 1px solid #000; */
   border-radius: 5px;
-  /* background-color:aliceblue */
 }
-/* svg.mouseup {
-  cursor: -webkit-grab;
-} */
-/* svg.mousedown {
-  cursor: -webkit-grabbing;
-} */
+
 .element {
   transition: opacity 0.5s ease;
 }
 .selected {
   opacity: 1 !important;
 }
-/* .pinned {
-  opacity: 1 !important;
-} */
-.link {
-  /* stroke: 'gray';
-  stroke-width: 1; */
-}
-.link-text {
-  /* fill: "gray";
-  font-size: 10; */
-}
 .node,
 .link {
-  /* fill: "darkcyan"; 在 css 里使用不如在代码中使用权重高 */
   cursor: pointer;
 }
-.node-text {
-  /* fill: "gray";
-  font-size: 10; */
-}
-/* #reset-button {
-  position: absolute;
-} */
-
 .linkText {
   position: absolute;
   z-index: 10;
-  /* width: 5px; */
-  /* height: 40px; */
   background-color: rgba(75, 75, 75, 0.596);
   border-radius: 10px;
-  color:white;
+  color: white;
   padding: 10px;
 }
 </style>
