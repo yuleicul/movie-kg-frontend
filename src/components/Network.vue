@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import * as d3 from "d3"; 
+import * as d3 from "d3";
 import d3SelectionMulti from "d3-selection-multi";
 
 // const d3 = Object.assign({}, d3Origin, d3SelectionMulti)
@@ -133,7 +133,7 @@ export default {
     svgTheme: {
       type: String,
       default: "dark" // dark or light
-    }, 
+    },
     bodyStrength: {
       type: Number,
       default: -50
@@ -142,7 +142,7 @@ export default {
     highlightNodes: {
       type: Array,
       default: () => {
-        return []
+        return [];
       }
     }
   },
@@ -185,9 +185,9 @@ export default {
     theme() {
       if (this.svgTheme === "light") {
         return {
-          bgcolor: "rgba(255,255,240,0.5)",
-          nodeStroke: "black",
-          linkStroke: "rgba(50,50,100,0.5)",
+          bgcolor: "white",
+          nodeStroke: "white",
+          linkStroke: "lightgray",
           textFill: "black"
         };
       } else {
@@ -212,7 +212,6 @@ export default {
       this.$nextTick(function() {
         this.initDragTickZoom();
       });
-      
     },
     nodes: function() {
       this.initData();
@@ -245,7 +244,7 @@ export default {
         .force(
           "center",
           d3.forceCenter(this.svgSize.width / 2, this.svgSize.height / 2)
-        )
+        );
 
       console.log(this.nodes);
       console.log(this.links);
@@ -253,43 +252,40 @@ export default {
     initDragTickZoom() {
       // 给节点添加拖拽
       d3.selectAll(".node").call(this.drag(this.force));
-      this.force
-        .on("tick", () => {
-          // 更新连线坐标
-          d3.selectAll(".link")
-            .data(this.links)
-            .attrs({
-              x1: d => d.source.x,
-              y1: d => d.source.y,
-              x2: d => d.target.x,
-              y2: d => d.target.y
-            });
-          // 更新节点坐标
-          d3.selectAll(".node")
-            .data(this.nodes)
-            .attrs({
-              cx: d => d.x,
-              cy: d => d.y
-            });
-          // 更新文字坐标
-          d3.selectAll(".node-text")
-            .data(this.nodes)
-            .attrs({
-              x: d => d.x,
-              y: d => d.y
-            });
-          d3.selectAll(".link-text")
-            .data(this.links)
-            .attrs({
-              x: d => (d.source.x + d.target.x) / 2,
-              y: d => (d.source.y + d.target.y) / 2
-            });
-        });
+      this.force.on("tick", () => {
+        // 更新连线坐标
+        d3.selectAll(".link")
+          .data(this.links)
+          .attrs({
+            x1: d => d.source.x,
+            y1: d => d.source.y,
+            x2: d => d.target.x,
+            y2: d => d.target.y
+          });
+        // 更新节点坐标
+        d3.selectAll(".node")
+          .data(this.nodes)
+          .attrs({
+            cx: d => d.x,
+            cy: d => d.y
+          });
+        // 更新文字坐标
+        d3.selectAll(".node-text")
+          .data(this.nodes)
+          .attrs({
+            x: d => d.x,
+            y: d => d.y
+          });
+        d3.selectAll(".link-text")
+          .data(this.links)
+          .attrs({
+            x: d => (d.source.x + d.target.x) / 2,
+            y: d => (d.source.y + d.target.y) / 2
+          });
+      });
 
       // 初始化 zoom
-      this.zoom
-        .scaleExtent([0.1, 4])
-        .on("zoom", this.zoomed); 
+      this.zoom.scaleExtent([0.1, 4]).on("zoom", this.zoomed);
 
       d3.select("svg")
         .call(this.zoom)
@@ -332,7 +328,7 @@ export default {
         };
         this.linkTextContent = e.target.__data__[this.linkTextKey];
         this.linkTextVisible = true;
-        this.$emit("hoverLink", e, e.target.__data__); 
+        this.$emit("hoverLink", e, e.target.__data__);
       }
     },
     svgMouseout(e) {

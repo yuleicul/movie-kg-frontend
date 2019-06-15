@@ -51,7 +51,7 @@
         <el-button icon="el-icon-s-operation" circle @click="showSettingCard=!showSettingCard"></el-button>
       </div>
 
-      <el-card class="setting-box-card setting" v-if="showSettingCard">
+      <el-card class="setting-box-card" v-if="showSettingCard">
         <div slot="header" class="clearfix">
           <span>设置</span>
           <el-button
@@ -60,9 +60,9 @@
             @click="showSettingCard=!showSettingCard"
           >关闭</el-button>
         </div>节点大小
-        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>边的粗细
-        <el-slider v-model="linkWidth" show-input :max="20"></el-slider>边的长度
-        <el-slider v-model="linkDistance" show-input :max="300" :step="50" show-stops></el-slider>作用力大小
+        <el-slider v-model="nodeSize" show-input :max="50"></el-slider>连线宽度
+        <el-slider v-model="linkWidth" show-input :max="20"></el-slider>连线长度
+        <el-slider v-model="linkDistance" show-input :max="300" :step="50" show-stops></el-slider>作用力
         <el-slider v-model="bodyStrength" show-input :min="-1000" :max="0" :step="50" show-stops></el-slider>
         <br>
         <div>
@@ -468,15 +468,13 @@ ul {
   font-size: 14px;
 } */
 
-.setting {
-  position: absolute;
-  right: 40px;
-  top: 20px;
-  z-index: 10;
-}
-
 .setting-box-card {
+  position: absolute;
+  z-index: 10;
   overflow: auto;
+  top: 15px;
+  right: 15px;
+
   /* position: relative; */
   width: 380px;
   max-height: 700px;
