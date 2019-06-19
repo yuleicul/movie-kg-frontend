@@ -35,8 +35,6 @@ npm run serve
 
 ## Vue + D3
 
-写了一个 D3 力导向图的 Vue 组件。
-
-更多细节：[vue-network-d3](https://github.com/ChenCyl/vue-network-d3)
+写了一个 D3 力导向图的 Vue 组件。更多细节：[vue-network-d3](https://github.com/ChenCyl/vue-network-d3)
 
 
